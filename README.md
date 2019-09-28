@@ -10,7 +10,7 @@ A code example to show how to use Camera2 APIs, how to camouflage device, and ho
 
 https://github.com/krasavkana/android-ble-switch
 
-1. NOT as remote-camera, especially nothing.
+2. NOT as remote-camera, especially nothing.
 
 ## What the app can do
 
