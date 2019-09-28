@@ -8,7 +8,7 @@ A code example to show how to use Camera2 APIs, how to camouflage device, and ho
 
 1. When you want to use this app as remote-camera, some BLE switch is needed.
 
-https://github.com/krasavkana/android-ble-switch
+https://github.com/krasavkana/android-ble-switch/blob/master/README.md
 
 2. NOT as remote-camera, especially nothing.
 
