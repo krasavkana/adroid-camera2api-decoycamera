@@ -35,6 +35,13 @@ shooting sound will be added automatically
 
 Note that code up here includes nothing about mediasound.
 
+## Test Devices
+
+- OPPO R11S
+- Galaxy J6+
+- Amazon Kindle Fire7
+- Amazon Kindle Fire10HD
+
 ## More info about the app
 
 Visit below:
