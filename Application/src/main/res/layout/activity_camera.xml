@@ -5,14 +5,14 @@
     android:id="@+id/container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000"
+    android:background="@android:color/transparent"
     tools:context="com.krasavkana.android.decoycamera.CameraActivity">
-
+<!--
     <ImageView
         android:id="@+id/image_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:contentDescription="@string/info"
         android:scaleType="centerInside" />
-
+-->
 </FrameLayout>
