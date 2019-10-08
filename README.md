@@ -45,6 +45,6 @@ Note that code up here includes nothing about mediasound.
 ## More info about the app
 
 Visit below:
-how to use and so on on [MY BLOG PAGE](https://krasavkana.com)
+how to use and so on on [MY BLOG PAGE](https://krasavkana.com/archives/4400)
 
 Enjoy!
