@@ -41,9 +41,12 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.AudioAttributes;
+import android.media.AudioManager;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.MediaActionSound;
+import android.media.SoundPool;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -308,6 +311,12 @@ public class Camera2BasicFragment extends Fragment
     private static String mBleCommand;
 
     /**
+     * 撮影直前にシャッター音を鳴らす
+     */
+    SoundPool soundPool = null;
+    int soundPoolId = 0; // シャッター音のファイルは「camera_click.ogg」を使用
+
+    /**
      * A {@link CameraCaptureSession.CaptureCallback} that handles events related to JPEG capture.
      */
     private CameraCaptureSession.CaptureCallback mCaptureCallback
@@ -482,6 +491,7 @@ public class Camera2BasicFragment extends Fragment
             mState = STATE_WAITING_NON_PRECAPTURE;
 //            mState = STATE_WAITING_LOCK;
         }
+
     }
 
     @Override
@@ -499,6 +509,20 @@ public class Camera2BasicFragment extends Fragment
         super.onResume();
         mTextureView.setVisibility(View.VISIBLE);
         startBackgroundThread();
+
+        //シャッター音をSoundPoolに入れておく。
+        // https://akira-watson.com/android/soundpool.html
+        if (soundPool == null) {
+            AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_GAME)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build();
+            soundPool = new SoundPool.Builder()
+                    .setAudioAttributes(audioAttributes)
+                    .setMaxStreams(2)
+                    .build();
+            soundPoolId = soundPool.load(getContext(), R.raw.camera_click, 1);
+        }
 
         // When the screen is turned off and turned back on, the SurfaceTexture is already
         // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
@@ -908,6 +932,9 @@ public class Camera2BasicFragment extends Fragment
             int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
             captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, getOrientation(rotation));
 
+            // シャッター音を鳴らす
+            soundPool.play(soundPoolId, 1.0f,1.0f,0,0,1);
+
             CameraCaptureSession.CaptureCallback CaptureCallback
                     = new CameraCaptureSession.CaptureCallback() {
 
@@ -1116,6 +1143,8 @@ public class Camera2BasicFragment extends Fragment
 
     /**
      * 現在日時をyyyyMMddTHHmmssSSS形式で取得する.<br>
+     *
+     * @return 現在日時（ミリ秒まで）。年／月／日と決め打ちしているので、本来ならLocale対応が必要。
      */
     public static String getNowTimestamp(){
         final DateFormat df = new SimpleDateFormat("yyyyMMdd'T'HHmmssSSS");
