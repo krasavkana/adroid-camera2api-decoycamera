@@ -314,7 +314,8 @@ public class Camera2BasicFragment extends Fragment
      * 撮影直前にシャッター音を鳴らす
      */
     SoundPool soundPool = null;
-    int soundPoolId = 0; // シャッター音のファイルは「camera_click.ogg」を使用
+//    int soundPoolId = 0; // シャッター音のファイルは「camera_click.ogg」を使用
+    int soundPoolId = 0; // シャッター音のファイルは「video_record.ogg」を使用
 
     /**
      * A {@link CameraCaptureSession.CaptureCallback} that handles events related to JPEG capture.
@@ -521,7 +522,8 @@ public class Camera2BasicFragment extends Fragment
                     .setAudioAttributes(audioAttributes)
                     .setMaxStreams(2)
                     .build();
-            soundPoolId = soundPool.load(getContext(), R.raw.camera_click, 1);
+            soundPoolId = soundPool.load(getContext(), R.raw.video_record, 1);
+//            soundPoolId = soundPool.load(getContext(), R.raw.camera_click, 1);
         }
 
         // When the screen is turned off and turned back on, the SurfaceTexture is already
