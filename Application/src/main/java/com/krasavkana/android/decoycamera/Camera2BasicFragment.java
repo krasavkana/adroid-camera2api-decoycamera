@@ -62,6 +62,7 @@ import androidx.core.content.ContextCompat;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.TextureView;
@@ -465,10 +466,45 @@ public class Camera2BasicFragment extends Fragment
         return new Camera2BasicFragment();
     }
 
+    /**
+     * View.OnKeyListenerを設定する
+     * http://outofmem.hatenablog.com/entry/2014/04/20/090047
+     * https://stackoverflow.com/questions/7992216/android-fragment-handle-back-button-press
+     *
+     */
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_camera2_basic, container, false);
+        Log.e(TAG, "onCreateView()");
+        final View v = inflater.inflate(R.layout.fragment_camera2_basic, container, false);
+
+        // View#setFocusableInTouchModeでtrueをセットしておくこと
+        v.setFocusableInTouchMode(true);
+        v.requestFocus();
+        v.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                // KeyEvent.ACTION_DOWN以外のイベントを無視する
+                // （これがないとKeyEvent.ACTION_UPもフックしてしまう）
+                Log.e(TAG, "onKey()");
+                if(event.getAction() != KeyEvent.ACTION_DOWN) {
+                    return false;
+                }
+                switch(keyCode) {
+//                    case KeyEvent.KEYCODE_VOLUME_UP:
+//                        // TODO:音量増加キーが押された時のイベント
+//                        return true;
+                    case KeyEvent.KEYCODE_VOLUME_DOWN:
+                        // TODO:音量減少キーが押された時のイベント
+                        takePicture();
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        });
+
+        return v;
     }
 
     @Override
