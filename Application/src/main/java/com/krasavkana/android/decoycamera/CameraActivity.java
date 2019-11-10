@@ -125,13 +125,13 @@ public class CameraActivity extends AppCompatActivity {
     public void onPause() {
         Log.d(TAG, "onPause()");
         super.onPause();
-//        isFinished = true;
+        isFinished = true;
     }
     @Override
     public void onStart() {
         Log.d(TAG, "onStart()");
         super.onStart();
-        FrameLayout root = findViewById(R.id.container);
+//        FrameLayout root = findViewById(R.id.container);
 //        mPref = PreferenceManager.getDefaultSharedPreferences(this);
 //        switch (mPref.getString("preference_theme", getString(R.string.default_value_preference_theme))) {
 //            case "light":

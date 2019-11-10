@@ -2,11 +2,13 @@
 <resources>
     <string name="shortAppName">Decoy</string>
     <string name="picture">T</string>
-    <string name="info">FR</string>
+    <string name="lens_facing">FR</string>
     <string name="request_permission">This sample needs camera permission.</string>
     <string name="camera_error">This device doesn\'t support Camera2 API.</string>
     <string name="default_value_preference_theme">light</string>
     <string name="default_value_preference_camouflage">translucent</string>
     <string name="default_value_preference_imageview_interval">10000</string>
     <string name="default_value_preference_prefix">pic</string>
+    <string name="default_value_preference_finder_location">ML</string>
+    <string name="default_value_preference_finder_size">40x60</string>
 </resources>

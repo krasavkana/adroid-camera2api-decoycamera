@@ -64,13 +64,17 @@ import androidx.preference.PreferenceManager;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
+import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import java.io.File;
@@ -310,6 +314,29 @@ public class Camera2BasicFragment extends Fragment
     private boolean mLensFacingFront;
 
     /**
+     * Finder Location
+     */
+    private String mFinderLocation;
+
+    /**
+     * Finder Size
+     */
+    private String mFinderSize;
+
+    /**
+     * LENS Facing button is visible
+     * Button to lens facing
+     */
+    private boolean mButtonLensFacingOn;
+    private Button mButtonLensFacing;
+    /**
+     * Shoot button is visible
+     * Button to shoot
+     */
+    private boolean mButtonShootOn;
+    private Button mButtonShoot;
+
+    /**
      * bleCommand from Intent
      */
     private static String mBleCommand;
@@ -513,11 +540,36 @@ public class Camera2BasicFragment extends Fragment
         return v;
     }
 
+    // Does setWidth(int pixels) use dip or px?
+    // https://stackoverflow.com/questions/2406449/does-setwidthint-pixels-use-dip-or-px
+    // value in DP
+    public static int getValueInDP(Context context, int value){
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, context.getResources().getDisplayMetrics());
+    }
+
+    public static float getValueInDP(Context context, float value){
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, context.getResources().getDisplayMetrics());
+    }
+
+    // value in PX
+    public static int getValueInPixel(Context context, int value){
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, value, context.getResources().getDisplayMetrics());
+    }
+
+    public static float getValueInPixel(Context context, float value){
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, value, context.getResources().getDisplayMetrics());
+    }
+
     @Override
     public void onViewCreated(final View view, Bundle savedInstanceState) {
         Log.d(TAG, "onViewCreated()");
-        view.findViewById(R.id.picture).setOnClickListener(this);
-        view.findViewById(R.id.info).setOnClickListener(this);
+
+        mButtonShoot = view.findViewById(R.id.picture);
+        mButtonShoot.setOnClickListener(this);
+
+        mButtonLensFacing = view.findViewById(R.id.info);
+        mButtonLensFacing.setOnClickListener(this);
+
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
 
         if (mBleCommand != null) {
@@ -525,6 +577,8 @@ public class Camera2BasicFragment extends Fragment
             mState = STATE_WAITING_NON_PRECAPTURE;
 //            mState = STATE_WAITING_LOCK;
         }
+
+
     }
 
     @Override
@@ -538,9 +592,69 @@ public class Camera2BasicFragment extends Fragment
         Log.d(TAG, "mLensFacingFront:" + mLensFacingFront);
         mPrefix = mPref.getString("preference_save_prefix", "");
         Log.d(TAG, "mPrefix:" + mPrefix);
-//        mLensFacingFront = false;// initially Lens Facing is back
-//        mLensFacingFront = true;// initially Lens Facing is back
-//        mFile = new File(getActivity().getExternalFilesDir(null), "pic" + getNowTimestamp() + ".jpg");
+
+        // ファインダの表示場所と大きさを変更する
+        mFinderLocation = mPref.getString("preference_finder_location", "ML");
+        Log.d(TAG, "mFinderLocation:" + mFinderLocation);
+        mFinderSize = mPref.getString("preference_finder_size", "40x60");
+        Log.d(TAG, "mFinderSize:" + mFinderSize);
+        // ファインダの大きさを設定する
+        int finderWidth = Integer.parseInt(mFinderSize.substring(0,mFinderSize.indexOf('x')));
+        Log.d(TAG, "finderWidth:" + finderWidth);
+        int finderHeight = Integer.parseInt(mFinderSize.substring(mFinderSize.indexOf('x')+1,mFinderSize.length()));
+        Log.d(TAG, "finderHeight:" + finderHeight);
+        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(
+//                getValueInDP(getContext(),40),getValueInDP(getContext(),60)
+                getValueInDP(getContext(),finderWidth),getValueInDP(getContext(),finderHeight)
+        );
+        // ファインダの場所を設定する
+        int M10DP = getValueInDP(getContext(),10);
+        switch(mFinderLocation){
+            case "TL":
+                lp.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
+                lp.addRule(RelativeLayout.ALIGN_PARENT_START, RelativeLayout.TRUE);
+                lp.setMargins(M10DP,M10DP,0,0);
+                break;
+            case "TR":
+                lp.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
+                lp.addRule(RelativeLayout.ALIGN_PARENT_END, RelativeLayout.TRUE);
+                lp.setMargins(0,M10DP,M10DP,0);
+                break;
+            case "ML":
+                lp.addRule(RelativeLayout.CENTER_VERTICAL, RelativeLayout.TRUE);
+                lp.setMarginStart(M10DP);
+                break;
+            case "BL":
+                lp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
+                lp.addRule(RelativeLayout.ALIGN_PARENT_START, RelativeLayout.TRUE);
+                lp.setMargins(M10DP,0,0,M10DP);
+                break;
+            case "BR":
+                lp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
+                lp.addRule(RelativeLayout.ALIGN_PARENT_END, RelativeLayout.TRUE);
+                lp.setMargins(0,0,M10DP,M10DP);
+                break;
+        }
+        mTextureView.setLayoutParams(lp);
+
+        // 撮影ボタンの表示ONOFF
+        mButtonShootOn = mPref.getBoolean("preference_shoot_button_on", true);
+        Log.d(TAG, "mButtonShootOn:" + mButtonShootOn);
+        if(mButtonShootOn) {
+            mButtonShoot.setVisibility(View.VISIBLE);
+        }else{
+            mButtonShoot.setVisibility(View.INVISIBLE);
+        }
+
+        // カメラ切り替えボタンの表示ONOFF
+        mButtonLensFacingOn = mPref.getBoolean("preference_lens_facing_button_on", true);
+        Log.d(TAG, "mButtonLensFacingOn:" + mButtonLensFacingOn);
+        if(mButtonLensFacingOn) {
+            mButtonLensFacing.setVisibility(View.VISIBLE);
+        }else{
+            mButtonLensFacing.setVisibility(View.INVISIBLE);
+        }
+
     }
 
     @Override
