@@ -73,6 +73,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
@@ -270,8 +271,24 @@ public class Camera2BasicFragment extends Fragment
 
         @Override
         public void onImageAvailable(ImageReader reader) {
+            //メインスレッドのメッセージキューにメッセージを登録します。
+            mHandler.post(new Runnable() {
+                //run()の中の処理はメインスレッドで動作する。
+                public void run() {
+                    //UI画面のImageButtonの表示・非表示を切り替える。
+                    mButtonSave.setVisibility(View.VISIBLE);
+               }
+            });
+            //Backgroundスレッドのメッセージキューにメッセージを登録します。
             mFile = new File(getActivity().getExternalFilesDir(null), mPrefix + getNowTimestamp() + ".jpg");
             mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
+            mHandler.post(new Runnable() {
+                //run()の中の処理はメインスレッドで動作する。
+                public void run() {
+                    //UI画面のImageButtonの表示・非表示を切り替える。
+                    mButtonSave.setVisibility(View.INVISIBLE);
+                }
+            });
         }
 
     };
@@ -328,13 +345,24 @@ public class Camera2BasicFragment extends Fragment
      * Button to lens facing
      */
     private boolean mButtonLensFacingOn;
-    private Button mButtonLensFacing;
+    private ImageButton mButtonLensFacing;
+
     /**
      * Shoot button is visible
      * Button to shoot
      */
     private boolean mButtonShootOn;
-    private Button mButtonShoot;
+    private ImageButton mButtonShoot;
+
+    /**
+     * Save button is visible while saving image file
+     */
+    private ImageButton mButtonSave;
+
+    /**
+     * A {@link Handler} for UI Thread to control mButtonSave when saving file
+     */
+    private Handler mHandler;
 
     /**
      * bleCommand from Intent
@@ -537,6 +565,8 @@ public class Camera2BasicFragment extends Fragment
             }
         });
 
+        mHandler = new Handler();
+
         return v;
     }
 
@@ -569,6 +599,9 @@ public class Camera2BasicFragment extends Fragment
 
         mButtonLensFacing = view.findViewById(R.id.info);
         mButtonLensFacing.setOnClickListener(this);
+
+        mButtonSave = view.findViewById(R.id.save);
+        mButtonSave.setVisibility(View.INVISIBLE);
 
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
 
@@ -1086,7 +1119,7 @@ public class Camera2BasicFragment extends Fragment
                 public void onCaptureCompleted(@NonNull CameraCaptureSession session,
                                                @NonNull CaptureRequest request,
                                                @NonNull TotalCaptureResult result) {
-                    showToast("Saved: " + mFile.getName());
+//                    showToast("Saved: " + mFile.getName());
                     Log.d(TAG, mFile.toString());
                     unlockFocus();
                 }
@@ -1095,7 +1128,6 @@ public class Camera2BasicFragment extends Fragment
             mCaptureSession.stopRepeating();
             mCaptureSession.abortCaptures();
             mCaptureSession.capture(captureBuilder.build(), CaptureCallback, null);
-
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
