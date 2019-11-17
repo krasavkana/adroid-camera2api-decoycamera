@@ -37,11 +37,11 @@
     </string-array>
 
     <string-array name="entries_preference_finder_location">
-        <item>TL</item>
-        <item>TR</item>
-        <item>ML</item>
-        <item>BL</item>
-        <item>BR</item>
+        <item>TopLeft</item>
+        <item>TopRight</item>
+        <item>MidLeft</item>
+        <item>BottomLeft</item>
+        <item>BottomRight</item>
     </string-array>
     <string-array name="entry_values_preference_finder_location">
         <item>TL</item>
@@ -53,8 +53,8 @@
     <string-array name="entries_preference_finder_size">
         <item>Large</item>
         <item>Middle</item>
-        <item>small</item>
-        <item>tiny</item>
+        <item>Small</item>
+        <item>Tiny</item>
     </string-array>
     <string-array name="entry_values_preference_finder_size">
         <item>80x120</item>
