@@ -22,6 +22,7 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
@@ -58,17 +59,23 @@ import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 //import android.support.v4.app.Fragment;
 import androidx.core.content.ContextCompat;
+import androidx.preference.PreferenceManager;
 //import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
+import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import java.io.File;
@@ -109,6 +116,9 @@ public class Camera2BasicFragment extends Fragment
      * Tag for the {@link Log}.
      */
     private static final String TAG = "Camera2BasicFragment";
+
+
+    SharedPreferences mPref;
 
     /**
      * Camera state: Showing camera preview.
@@ -250,6 +260,7 @@ public class Camera2BasicFragment extends Fragment
      * This is the output file for our picture.
      */
     private File mFile;
+    private String mPrefix;
 
     /**
      * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
@@ -260,8 +271,24 @@ public class Camera2BasicFragment extends Fragment
 
         @Override
         public void onImageAvailable(ImageReader reader) {
-            mFile = new File(getActivity().getExternalFilesDir(null), "pic" + getNowTimestamp() + ".jpg");
+            //メインスレッドのメッセージキューにメッセージを登録します。
+            mHandler.post(new Runnable() {
+                //run()の中の処理はメインスレッドで動作する。
+                public void run() {
+                    //UI画面のImageButtonの表示・非表示を切り替える。
+                    mButtonSave.setVisibility(View.VISIBLE);
+               }
+            });
+            //Backgroundスレッドのメッセージキューにメッセージを登録します。
+            mFile = new File(getActivity().getExternalFilesDir(null), mPrefix + getNowTimestamp() + ".jpg");
             mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
+            mHandler.post(new Runnable() {
+                //run()の中の処理はメインスレッドで動作する。
+                public void run() {
+                    //UI画面のImageButtonの表示・非表示を切り替える。
+                    mButtonSave.setVisibility(View.INVISIBLE);
+                }
+            });
         }
 
     };
@@ -302,6 +329,40 @@ public class Camera2BasicFragment extends Fragment
      * LENS Facing is FRONT
      */
     private boolean mLensFacingFront;
+
+    /**
+     * Finder Location
+     */
+    private String mFinderLocation;
+
+    /**
+     * Finder Size
+     */
+    private String mFinderSize;
+
+    /**
+     * LENS Facing button is visible
+     * Button to lens facing
+     */
+    private boolean mButtonLensFacingOn;
+    private ImageButton mButtonLensFacing;
+
+    /**
+     * Shoot button is visible
+     * Button to shoot
+     */
+    private boolean mButtonShootOn;
+    private ImageButton mButtonShoot;
+
+    /**
+     * Save button is visible while saving image file
+     */
+    private ImageButton mButtonSave;
+
+    /**
+     * A {@link Handler} for UI Thread to control mButtonSave when saving file
+     */
+    private Handler mHandler;
 
     /**
      * bleCommand from Intent
@@ -475,7 +536,7 @@ public class Camera2BasicFragment extends Fragment
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        Log.e(TAG, "onCreateView()");
+        Log.d(TAG, "onCreateView()");
         final View v = inflater.inflate(R.layout.fragment_camera2_basic, container, false);
 
         // View#setFocusableInTouchModeでtrueをセットしておくこと
@@ -486,7 +547,7 @@ public class Camera2BasicFragment extends Fragment
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 // KeyEvent.ACTION_DOWN以外のイベントを無視する
                 // （これがないとKeyEvent.ACTION_UPもフックしてしまう）
-                Log.e(TAG, "onKey()");
+                Log.d(TAG, "onKey()");
                 if(event.getAction() != KeyEvent.ACTION_DOWN) {
                     return false;
                 }
@@ -504,13 +565,44 @@ public class Camera2BasicFragment extends Fragment
             }
         });
 
+        mHandler = new Handler();
+
         return v;
+    }
+
+    // Does setWidth(int pixels) use dip or px?
+    // https://stackoverflow.com/questions/2406449/does-setwidthint-pixels-use-dip-or-px
+    // value in DP
+    public static int getValueInDP(Context context, int value){
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, context.getResources().getDisplayMetrics());
+    }
+
+    public static float getValueInDP(Context context, float value){
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, context.getResources().getDisplayMetrics());
+    }
+
+    // value in PX
+    public static int getValueInPixel(Context context, int value){
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, value, context.getResources().getDisplayMetrics());
+    }
+
+    public static float getValueInPixel(Context context, float value){
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, value, context.getResources().getDisplayMetrics());
     }
 
     @Override
     public void onViewCreated(final View view, Bundle savedInstanceState) {
-        view.findViewById(R.id.picture).setOnClickListener(this);
-        view.findViewById(R.id.info).setOnClickListener(this);
+        Log.d(TAG, "onViewCreated()");
+
+        mButtonShoot = view.findViewById(R.id.picture);
+        mButtonShoot.setOnClickListener(this);
+
+        mButtonLensFacing = view.findViewById(R.id.info);
+        mButtonLensFacing.setOnClickListener(this);
+
+        mButtonSave = view.findViewById(R.id.save);
+        mButtonSave.setVisibility(View.INVISIBLE);
+
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
 
         if (mBleCommand != null) {
@@ -518,20 +610,89 @@ public class Camera2BasicFragment extends Fragment
             mState = STATE_WAITING_NON_PRECAPTURE;
 //            mState = STATE_WAITING_LOCK;
         }
+
+
     }
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
+        Log.d(TAG, "onActivityCreated()");
         super.onActivityCreated(savedInstanceState);
+        mPref = PreferenceManager.getDefaultSharedPreferences(getContext());
+        String aaa = mPref.getString("preference_theme", "");
+        Log.d(TAG, "preference_theme:" + aaa);
+        mLensFacingFront = mPref.getBoolean("preference_front_lens_facing", false);
+        Log.d(TAG, "mLensFacingFront:" + mLensFacingFront);
+        mPrefix = mPref.getString("preference_save_prefix", "");
+        Log.d(TAG, "mPrefix:" + mPrefix);
 
-        mLensFacingFront = false;// initially Lens Facing is back
-//        mLensFacingFront = true;// initially Lens Facing is back
+        // ファインダの表示場所と大きさを変更する
+        mFinderLocation = mPref.getString("preference_finder_location", "ML");
+        Log.d(TAG, "mFinderLocation:" + mFinderLocation);
+        mFinderSize = mPref.getString("preference_finder_size", "40x60");
+        Log.d(TAG, "mFinderSize:" + mFinderSize);
+        // ファインダの大きさを設定する
+        int finderWidth = Integer.parseInt(mFinderSize.substring(0,mFinderSize.indexOf('x')));
+        Log.d(TAG, "finderWidth:" + finderWidth);
+        int finderHeight = Integer.parseInt(mFinderSize.substring(mFinderSize.indexOf('x')+1,mFinderSize.length()));
+        Log.d(TAG, "finderHeight:" + finderHeight);
+        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(
+//                getValueInDP(getContext(),40),getValueInDP(getContext(),60)
+                getValueInDP(getContext(),finderWidth),getValueInDP(getContext(),finderHeight)
+        );
+        // ファインダの場所を設定する
+        int M10DP = getValueInDP(getContext(),10);
+        switch(mFinderLocation){
+            case "TL":
+                lp.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
+                lp.addRule(RelativeLayout.ALIGN_PARENT_START, RelativeLayout.TRUE);
+                lp.setMargins(M10DP,M10DP,0,0);
+                break;
+            case "TR":
+                lp.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
+                lp.addRule(RelativeLayout.ALIGN_PARENT_END, RelativeLayout.TRUE);
+                lp.setMargins(0,M10DP,M10DP,0);
+                break;
+            case "ML":
+                lp.addRule(RelativeLayout.CENTER_VERTICAL, RelativeLayout.TRUE);
+                lp.setMarginStart(M10DP);
+                break;
+            case "BL":
+                lp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
+                lp.addRule(RelativeLayout.ALIGN_PARENT_START, RelativeLayout.TRUE);
+                lp.setMargins(M10DP,0,0,M10DP);
+                break;
+            case "BR":
+                lp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
+                lp.addRule(RelativeLayout.ALIGN_PARENT_END, RelativeLayout.TRUE);
+                lp.setMargins(0,0,M10DP,M10DP);
+                break;
+        }
+        mTextureView.setLayoutParams(lp);
 
-//        mFile = new File(getActivity().getExternalFilesDir(null), "pic" + getNowTimestamp() + ".jpg");
+        // 撮影ボタンの表示ONOFF
+        mButtonShootOn = mPref.getBoolean("preference_shoot_button_on", true);
+        Log.d(TAG, "mButtonShootOn:" + mButtonShootOn);
+        if(mButtonShootOn) {
+            mButtonShoot.setVisibility(View.VISIBLE);
+        }else{
+            mButtonShoot.setVisibility(View.INVISIBLE);
+        }
+
+        // カメラ切り替えボタンの表示ONOFF
+        mButtonLensFacingOn = mPref.getBoolean("preference_lens_facing_button_on", true);
+        Log.d(TAG, "mButtonLensFacingOn:" + mButtonLensFacingOn);
+        if(mButtonLensFacingOn) {
+            mButtonLensFacing.setVisibility(View.VISIBLE);
+        }else{
+            mButtonLensFacing.setVisibility(View.INVISIBLE);
+        }
+
     }
 
     @Override
     public void onResume() {
+        Log.d(TAG, "onResume()");
         super.onResume();
         mTextureView.setVisibility(View.VISIBLE);
         startBackgroundThread();
@@ -552,6 +713,7 @@ public class Camera2BasicFragment extends Fragment
     //https://stackoverflow.com/questions/42510285/java-lang-illegalstateexception-session-has-been-closed-further-changes-are-il?rq=1
     @Override
     public void onPause() {
+        Log.d(TAG, "onPause()");
         super.onPause();
         mTextureView.setVisibility(View.GONE);
         closeCamera();
@@ -595,6 +757,7 @@ public class Camera2BasicFragment extends Fragment
      */
     @SuppressWarnings("SuspiciousNameCombination")
     private void setUpCameraOutputs(int width, int height) {
+        Log.d(TAG, "setUpCameraOutputs()");
         Activity activity = getActivity();
         CameraManager manager = (CameraManager) activity.getSystemService(Context.CAMERA_SERVICE);
         try {
@@ -710,6 +873,7 @@ public class Camera2BasicFragment extends Fragment
      * Opens the camera specified by {@link Camera2BasicFragment#mCameraId}.
      */
     private void openCamera(int width, int height) {
+        Log.d(TAG, "openCamera()");
         // comment out to avoid to get this message so often
         // E/CheckPermission: real_camera-code= 12
         if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.CAMERA)
@@ -737,6 +901,7 @@ public class Camera2BasicFragment extends Fragment
      * Closes the current {@link CameraDevice}.
      */
     private void closeCamera() {
+        Log.d(TAG, "closeCamera()");
         try {
             mCameraOpenCloseLock.acquire();
             if (null != mCaptureSession) {
@@ -785,6 +950,7 @@ public class Camera2BasicFragment extends Fragment
      * Creates a new {@link CameraCaptureSession} for camera preview.
      */
     private void createCameraPreviewSession() {
+        Log.d(TAG, "createCameraPreviewSession()");
         try {
             SurfaceTexture texture = mTextureView.getSurfaceTexture();
             assert texture != null;
@@ -851,6 +1017,7 @@ public class Camera2BasicFragment extends Fragment
      * @param viewHeight The height of `mTextureView`
      */
     private void configureTransform(int viewWidth, int viewHeight) {
+        Log.d(TAG, "configureTransform()");
         Activity activity = getActivity();
         if (null == mTextureView || null == mPreviewSize || null == activity) {
             return;
@@ -886,6 +1053,7 @@ public class Camera2BasicFragment extends Fragment
      * Lock the focus as the first step for a still image capture.
      */
     private void lockFocus() {
+        Log.d(TAG, "lockFocus()");
         try {
             // This is how to tell the camera to lock focus.
             mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
@@ -905,7 +1073,7 @@ public class Camera2BasicFragment extends Fragment
      * we get a response in {@link #mCaptureCallback} from {@link #lockFocus()}.
      */
     private void runPrecaptureSequence() {
-        Log.d(TAG, "runPrecaptureSequence");
+        Log.d(TAG, "runPrecaptureSequence()");
         try {
             // This is how to tell the camera to trigger.
             mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER,
@@ -924,7 +1092,7 @@ public class Camera2BasicFragment extends Fragment
      * {@link #mCaptureCallback} from both {@link #lockFocus()}.
      */
     private void captureStillPicture() {
-        Log.d(TAG, "captureStillPicture");
+        Log.d(TAG, "captureStillPicture()");
         try {
             final Activity activity = getActivity();
             if (null == activity || null == mCameraDevice) {
@@ -951,7 +1119,7 @@ public class Camera2BasicFragment extends Fragment
                 public void onCaptureCompleted(@NonNull CameraCaptureSession session,
                                                @NonNull CaptureRequest request,
                                                @NonNull TotalCaptureResult result) {
-                    showToast("Saved: " + mFile.getName());
+//                    showToast("Saved: " + mFile.getName());
                     Log.d(TAG, mFile.toString());
                     unlockFocus();
                 }
@@ -960,7 +1128,6 @@ public class Camera2BasicFragment extends Fragment
             mCaptureSession.stopRepeating();
             mCaptureSession.abortCaptures();
             mCaptureSession.capture(captureBuilder.build(), CaptureCallback, null);
-
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -985,6 +1152,7 @@ public class Camera2BasicFragment extends Fragment
      * finished.
      */
     private void unlockFocus() {
+        Log.d(TAG, "unlockFocus()");
         try {
             // Reset the auto-focus trigger
             mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
