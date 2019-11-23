@@ -71,7 +71,7 @@ public class CameraActivity extends AppCompatActivity {
                 bleCommand = null;
             }
             getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.container, Camera2BasicFragment.newInstance(bleCommand))
+                    .replace(R.id.container, Camera2UIFragment.newInstance(bleCommand))
                     .commit();
         }
 

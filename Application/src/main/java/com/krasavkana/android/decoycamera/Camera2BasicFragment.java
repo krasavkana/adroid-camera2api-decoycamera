@@ -25,8 +25,6 @@ import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Point;
@@ -44,45 +42,26 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
-import android.media.MediaActionSound;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import androidx.annotation.NonNull;
-//import android.support.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
-//import android.support.v4.app.ActivityCompat;
-import androidx.core.*;
 import androidx.fragment.app.DialogFragment;
-//import android.support.v4.app.DialogFragment;
 import androidx.fragment.app.Fragment;
-//import android.support.v4.app.Fragment;
 import androidx.core.content.ContextCompat;
-import androidx.preference.PreferenceManager;
-//import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
-import android.util.TypedValue;
-import android.view.KeyEvent;
-import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.FrameLayout;
 import android.widget.ImageButton;
-import android.widget.ImageView;
-import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -95,7 +74,7 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-public class Camera2BasicFragment extends Fragment
+public abstract class Camera2BasicFragment extends Fragment
         implements View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
 
     /**
@@ -123,37 +102,37 @@ public class Camera2BasicFragment extends Fragment
     /**
      * Camera state: Showing camera preview.
      */
-    private static final int STATE_PREVIEW = 0;
+    public static final int STATE_PREVIEW = 0;
 
     /**
      * Camera state: Waiting for the focus to be locked.
      */
-    private static final int STATE_WAITING_LOCK = 1;
+    public static final int STATE_WAITING_LOCK = 1;
 
     /**
      * Camera state: Waiting for the exposure to be precapture state.
      */
-    private static final int STATE_WAITING_PRECAPTURE = 2;
+    public static final int STATE_WAITING_PRECAPTURE = 2;
 
     /**
      * Camera state: Waiting for the exposure state to be something other than precapture.
      */
-    private static final int STATE_WAITING_NON_PRECAPTURE = 3;
+    public static final int STATE_WAITING_NON_PRECAPTURE = 3;
 
     /**
      * Camera state: Picture was taken.
      */
-    private static final int STATE_PICTURE_TAKEN = 4;
+    public static final int STATE_PICTURE_TAKEN = 4;
 
     /**
      * Max preview width that is guaranteed by Camera2 API
      */
-    private static final int MAX_PREVIEW_WIDTH = 1920;
+    public static final int MAX_PREVIEW_WIDTH = 1920;
 
     /**
      * Max preview height that is guaranteed by Camera2 API
      */
-    private static final int MAX_PREVIEW_HEIGHT = 1080;
+    public static final int MAX_PREVIEW_HEIGHT = 1080;
 
     /**
      * {@link TextureView.SurfaceTextureListener} handles several lifecycle events on a
@@ -191,7 +170,7 @@ public class Camera2BasicFragment extends Fragment
     /**
      * An {@link AutoFitTextureView} for camera preview.
      */
-    private AutoFitTextureView mTextureView;
+    public AutoFitTextureView mTextureView;
 
     /**
      * A {@link CameraCaptureSession } for camera preview.
@@ -260,7 +239,7 @@ public class Camera2BasicFragment extends Fragment
      * This is the output file for our picture.
      */
     private File mFile;
-    private String mPrefix;
+    protected String mPrefix;
 
     /**
      * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
@@ -308,7 +287,7 @@ public class Camera2BasicFragment extends Fragment
      *
      * @see #mCaptureCallback
      */
-    private int mState = STATE_PREVIEW;
+    protected int mState = STATE_PREVIEW;
 
     /**
      * A {@link Semaphore} to prevent the app from exiting before closing the camera.
@@ -318,56 +297,32 @@ public class Camera2BasicFragment extends Fragment
     /**
      * Whether the current camera device supports Flash or not.
      */
-    private boolean mFlashSupported;
+    protected boolean mFlashSupported;
 
     /**
      * Orientation of the camera sensor
      */
-    private int mSensorOrientation;
+    protected int mSensorOrientation;
 
     /**
      * LENS Facing is FRONT
      */
-    private boolean mLensFacingFront;
-
-    /**
-     * Finder Location
-     */
-    private String mFinderLocation;
-
-    /**
-     * Finder Size
-     */
-    private String mFinderSize;
-
-    /**
-     * LENS Facing button is visible
-     * Button to lens facing
-     */
-    private boolean mButtonLensFacingOn;
-    private ImageButton mButtonLensFacing;
-
-    /**
-     * Shoot button is visible
-     * Button to shoot
-     */
-    private boolean mButtonShootOn;
-    private ImageButton mButtonShoot;
+    protected boolean mLensFacingFront;
 
     /**
      * Save button is visible while saving image file
      */
-    private ImageButton mButtonSave;
+    protected ImageButton mButtonSave;
 
     /**
      * A {@link Handler} for UI Thread to control mButtonSave when saving file
      */
-    private Handler mHandler;
+    protected Handler mHandler;
 
     /**
      * bleCommand from Intent
      */
-    private static String mBleCommand;
+    protected static String mBleCommand;
 
     /**
      * A {@link CameraCaptureSession.CaptureCallback} that handles events related to JPEG capture.
@@ -521,175 +476,6 @@ public class Camera2BasicFragment extends Fragment
         }
     }
 
-    public static Camera2BasicFragment newInstance(String bleCommand) {
-        mBleCommand = bleCommand;
-        Log.d(TAG, "mBleCommand: " + mBleCommand);
-        return new Camera2BasicFragment();
-    }
-
-    /**
-     * View.OnKeyListenerを設定する
-     * http://outofmem.hatenablog.com/entry/2014/04/20/090047
-     * https://stackoverflow.com/questions/7992216/android-fragment-handle-back-button-press
-     *
-     */
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        Log.d(TAG, "onCreateView()");
-        final View v = inflater.inflate(R.layout.fragment_camera2_basic, container, false);
-
-        // View#setFocusableInTouchModeでtrueをセットしておくこと
-        v.setFocusableInTouchMode(true);
-        v.requestFocus();
-        v.setOnKeyListener(new View.OnKeyListener() {
-            @Override
-            public boolean onKey(View v, int keyCode, KeyEvent event) {
-                // KeyEvent.ACTION_DOWN以外のイベントを無視する
-                // （これがないとKeyEvent.ACTION_UPもフックしてしまう）
-                Log.d(TAG, "onKey()");
-                if(event.getAction() != KeyEvent.ACTION_DOWN) {
-                    return false;
-                }
-                switch(keyCode) {
-//                    case KeyEvent.KEYCODE_VOLUME_UP:
-//                        // TODO:音量増加キーが押された時のイベント
-//                        return true;
-                    case KeyEvent.KEYCODE_VOLUME_DOWN:
-                        // TODO:音量減少キーが押された時のイベント
-                        takePicture();
-                        return true;
-                    default:
-                        return false;
-                }
-            }
-        });
-
-        mHandler = new Handler();
-
-        return v;
-    }
-
-    // Does setWidth(int pixels) use dip or px?
-    // https://stackoverflow.com/questions/2406449/does-setwidthint-pixels-use-dip-or-px
-    // value in DP
-    public static int getValueInDP(Context context, int value){
-        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, context.getResources().getDisplayMetrics());
-    }
-
-    public static float getValueInDP(Context context, float value){
-        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, context.getResources().getDisplayMetrics());
-    }
-
-    // value in PX
-    public static int getValueInPixel(Context context, int value){
-        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, value, context.getResources().getDisplayMetrics());
-    }
-
-    public static float getValueInPixel(Context context, float value){
-        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, value, context.getResources().getDisplayMetrics());
-    }
-
-    @Override
-    public void onViewCreated(final View view, Bundle savedInstanceState) {
-        Log.d(TAG, "onViewCreated()");
-
-        mButtonShoot = view.findViewById(R.id.picture);
-        mButtonShoot.setOnClickListener(this);
-
-        mButtonLensFacing = view.findViewById(R.id.info);
-        mButtonLensFacing.setOnClickListener(this);
-
-        mButtonSave = view.findViewById(R.id.save);
-        mButtonSave.setVisibility(View.INVISIBLE);
-
-        mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
-
-        if (mBleCommand != null) {
-            Log.d(TAG, "takePicture() will be done by bleCommand");
-            mState = STATE_WAITING_NON_PRECAPTURE;
-//            mState = STATE_WAITING_LOCK;
-        }
-
-
-    }
-
-    @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
-        Log.d(TAG, "onActivityCreated()");
-        super.onActivityCreated(savedInstanceState);
-        mPref = PreferenceManager.getDefaultSharedPreferences(getContext());
-        String aaa = mPref.getString("preference_theme", "");
-        Log.d(TAG, "preference_theme:" + aaa);
-        mLensFacingFront = mPref.getBoolean("preference_front_lens_facing", false);
-        Log.d(TAG, "mLensFacingFront:" + mLensFacingFront);
-        mPrefix = mPref.getString("preference_save_prefix", "");
-        Log.d(TAG, "mPrefix:" + mPrefix);
-
-        // ファインダの表示場所と大きさを変更する
-        mFinderLocation = mPref.getString("preference_finder_location", "ML");
-        Log.d(TAG, "mFinderLocation:" + mFinderLocation);
-        mFinderSize = mPref.getString("preference_finder_size", "40x60");
-        Log.d(TAG, "mFinderSize:" + mFinderSize);
-        // ファインダの大きさを設定する
-        int finderWidth = Integer.parseInt(mFinderSize.substring(0,mFinderSize.indexOf('x')));
-        Log.d(TAG, "finderWidth:" + finderWidth);
-        int finderHeight = Integer.parseInt(mFinderSize.substring(mFinderSize.indexOf('x')+1,mFinderSize.length()));
-        Log.d(TAG, "finderHeight:" + finderHeight);
-        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(
-//                getValueInDP(getContext(),40),getValueInDP(getContext(),60)
-                getValueInDP(getContext(),finderWidth),getValueInDP(getContext(),finderHeight)
-        );
-        // ファインダの場所を設定する
-        int M10DP = getValueInDP(getContext(),10);
-        switch(mFinderLocation){
-            case "TL":
-                lp.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
-                lp.addRule(RelativeLayout.ALIGN_PARENT_START, RelativeLayout.TRUE);
-                lp.setMargins(M10DP,M10DP,0,0);
-                break;
-            case "TR":
-                lp.addRule(RelativeLayout.ALIGN_PARENT_TOP, RelativeLayout.TRUE);
-                lp.addRule(RelativeLayout.ALIGN_PARENT_END, RelativeLayout.TRUE);
-                lp.setMargins(0,M10DP,M10DP,0);
-                break;
-            case "ML":
-                lp.addRule(RelativeLayout.CENTER_VERTICAL, RelativeLayout.TRUE);
-                lp.setMarginStart(M10DP);
-                break;
-            case "BL":
-                lp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
-                lp.addRule(RelativeLayout.ALIGN_PARENT_START, RelativeLayout.TRUE);
-                lp.setMargins(M10DP,0,0,M10DP);
-                break;
-            case "BR":
-                lp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, RelativeLayout.TRUE);
-                lp.addRule(RelativeLayout.ALIGN_PARENT_END, RelativeLayout.TRUE);
-                lp.setMargins(0,0,M10DP,M10DP);
-                break;
-        }
-        mTextureView.setLayoutParams(lp);
-
-        // 撮影ボタンの表示ONOFF
-        mButtonShootOn = mPref.getBoolean("preference_shoot_button_on", true);
-        Log.d(TAG, "mButtonShootOn:" + mButtonShootOn);
-        if(mButtonShootOn) {
-            mButtonShoot.setVisibility(View.VISIBLE);
-        }else{
-            mButtonShoot.setVisibility(View.INVISIBLE);
-        }
-
-        // カメラ切り替えボタンの表示ONOFF
-        mButtonLensFacingOn = mPref.getBoolean("preference_lens_facing_button_on", true);
-        Log.d(TAG, "mButtonLensFacingOn:" + mButtonLensFacingOn);
-        if(mButtonLensFacingOn) {
-            mButtonLensFacing.setVisibility(View.VISIBLE);
-        }else{
-            mButtonLensFacing.setVisibility(View.INVISIBLE);
-        }
-
-    }
-
     @Override
     public void onResume() {
         Log.d(TAG, "onResume()");
@@ -723,9 +509,6 @@ public class Camera2BasicFragment extends Fragment
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-//        closeCamera();
-//        stopBackgroundThread();
-//        super.onPause();
     }
 
     private void requestCameraPermission() {
@@ -767,7 +550,7 @@ public class Camera2BasicFragment extends Fragment
 
                 // We don't use a front facing camera in this sample.
                 Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-                if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT && mLensFacingFront == false) {
+                if (facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT && ! mLensFacingFront) {
                     continue;
                 }
                 if (facing != null && facing == CameraCharacteristics.LENS_FACING_BACK && mLensFacingFront) {
@@ -1045,7 +828,7 @@ public class Camera2BasicFragment extends Fragment
     /**
      * Initiate a still image capture.
      */
-    private void takePicture() {
+    public void takePicture() {
         lockFocus();
     }
 
@@ -1166,26 +949,6 @@ public class Camera2BasicFragment extends Fragment
                     mBackgroundHandler);
         } catch (CameraAccessException e) {
             e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void onClick(View view) {
-        switch (view.getId()) {
-            case R.id.picture: {
-                takePicture();
-                break;
-            }
-            case R.id.info: {
-                if (mLensFacingFront){
-                    mLensFacingFront = false;
-                }else{
-                    mLensFacingFront = true;
-                }
-                onPause();
-                onResume();
-                break;
-            }
         }
     }
 
@@ -1321,7 +1084,7 @@ public class Camera2BasicFragment extends Fragment
     /**
      * 現在日時をyyyyMMddTHHmmssSSS形式で取得する.<br>
      */
-    public static String getNowTimestamp(){
+    private static String getNowTimestamp(){
         final DateFormat df = new SimpleDateFormat("yyyyMMdd'T'HHmmssSSS");
         final Date date = new Date(System.currentTimeMillis());
         return df.format(date);
