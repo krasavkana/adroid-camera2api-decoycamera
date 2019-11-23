@@ -29,14 +29,14 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class CameraActivity extends AppCompatActivity {
+public class CameraActivity extends AppCompatActivity
+implements Camera2UIFragment.Camera2UIFragmentCallback {
 
-    private Bitmap image;
-    private boolean isFinished = false;
     private File[] mFiles;
     private int mFileNum = 0;
     private int mFilePos = -1;
     private ImageView mImageView;
+//    private boolean isFinished = false;
 
     /**
      * Tag for the {@link Log}.
@@ -50,8 +50,7 @@ public class CameraActivity extends AppCompatActivity {
     private static final int REQUEST_CODE_MASTER_MUTE = 1;
 
     SharedPreferences mPref;
-    String mCamouflage;
-    long mImageViewInterval;
+    boolean mCamouflageImageview;
     boolean mMasterMuteOn;
 
     @Override
@@ -77,12 +76,10 @@ public class CameraActivity extends AppCompatActivity {
 
         mPref = PreferenceManager.getDefaultSharedPreferences(this);
 
-        mImageViewInterval = Long.parseLong(mPref.getString("preference_imageview_interval", "10000"));
-        Log.d(TAG, "mImageViewInterval:" + mImageViewInterval);
-
-        mCamouflage = mPref.getString("preference_camouflage", "");
-        Log.d(TAG, "mCamouflage:" + mCamouflage);
-        if(CAMOUFLAGE_MODE.equals(mCamouflage)) {
+        String camouflage = mPref.getString("preference_camouflage", "");
+        Log.d(TAG, "mCamouflage:" + camouflage);
+        if(CAMOUFLAGE_MODE.equals(camouflage)) {
+            mCamouflageImageview = true;
 
             // get file list from the external storage path
 
@@ -125,71 +122,26 @@ public class CameraActivity extends AppCompatActivity {
     public void onPause() {
         Log.d(TAG, "onPause()");
         super.onPause();
-        isFinished = true;
     }
     @Override
     public void onStart() {
         Log.d(TAG, "onStart()");
         super.onStart();
-//        FrameLayout root = findViewById(R.id.container);
-//        mPref = PreferenceManager.getDefaultSharedPreferences(this);
-//        switch (mPref.getString("preference_theme", getString(R.string.default_value_preference_theme))) {
-//            case "light":
-//                root.setBackgroundColor(Color.parseColor("#FFFFFF"));
-//                break;
-//            case "dark":
-//                root.setBackgroundColor(Color.parseColor("#000000"));
-//                break;
-//        }
-        isFinished = true;
     }
     @Override
     public void onStop() {
         Log.d(TAG, "onStop()");
         super.onStop();
-        isFinished = true;
     }
     @Override
     public void onResume() {
         Log.d(TAG, "onResume()");
         super.onResume();
-
-        // set handler to get image for imageview
-        final Handler handler = new Handler();
-        if(mImageView != null) {
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    mFilePos++;
-                    if (mFilePos >= mFileNum) {
-                        mFilePos = 0;
-                    }
-
-                    Log.d(TAG, "Current Pos in image list: " + mFilePos);
-//                Log.d(TAG, mFiles[mFilePos].getPath());
-
-                    try (InputStream inputStream0 =
-                                 new FileInputStream(mFiles[mFilePos])) {
-                        Bitmap bitmap = BitmapFactory.decodeStream(inputStream0);
-                        mImageView.setImageBitmap(bitmap);
-                        mImageView.invalidate();
-                        handler.postDelayed(this, mImageViewInterval);
-                        if (isFinished) {
-                            handler.removeCallbacks(this);
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-            isFinished = false;
-        }
     }
     @Override
     public void onDestroy() {
         Log.d(TAG, "onDestroy()");
         super.onDestroy();
-        isFinished = true;
     }
 
     // メニューをActivity上に設置する
@@ -235,6 +187,31 @@ public class CameraActivity extends AppCompatActivity {
                 break;
             default:
                 break;
+        }
+    }
+
+    public void imageClickEvent(boolean increment) {
+        if(! mCamouflageImageview) return;
+
+        if(increment) {
+            mFilePos++;
+            if (mFilePos >= mFileNum) {
+                mFilePos = 0;
+            }
+        }else{
+            mFilePos--;
+            if (mFilePos < 0) {
+                mFilePos = mFileNum - 1;
+            }
+        }
+        Log.d(TAG, "Current Pos in image list: " + mFilePos);
+        try (InputStream inputStream0 =
+                     new FileInputStream(mFiles[mFilePos])) {
+            Bitmap bitmap = BitmapFactory.decodeStream(inputStream0);
+            mImageView.setImageBitmap(bitmap);
+            mImageView.invalidate();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

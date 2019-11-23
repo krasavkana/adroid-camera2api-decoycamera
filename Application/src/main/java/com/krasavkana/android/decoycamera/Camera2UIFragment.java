@@ -1,27 +1,45 @@
 package com.krasavkana.android.decoycamera;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.ActionMode;
+import android.view.ContextMenu;
+import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
 import androidx.core.app.ActivityCompat;
 import androidx.preference.PreferenceManager;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class Camera2UIFragment extends Camera2BasicFragment
-        implements View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
+import static androidx.constraintlayout.widget.Constraints.TAG;
+
+public class Camera2UIFragment extends Camera2BasicFragment {
+    //        implements ActivityCompat.OnRequestPermissionsResultCallback {
 
     /**
      * Tag for the {@link Log}.
@@ -58,6 +76,14 @@ public class Camera2UIFragment extends Camera2BasicFragment
         return new Camera2UIFragment();
     }
 
+    // SWIPEイベントを検出するための定数とメンバ変数
+    private static final int SWIPE_MIN_DISTANCE = 120;
+    private static final int SWIPE_MAX_OFF_PATH = 250;
+    private static final int SWIPE_THRESHOLD_VELOCITY = 200;
+
+
+    // コンテキストメニュの表示方法をアクションモードにする
+    private ActionMode mActionMode;
 
     /**
      * View.OnKeyListenerを設定する
@@ -97,29 +123,94 @@ public class Camera2UIFragment extends Camera2BasicFragment
             }
         });
 
-        mHandler = new Handler();
+        // ContextMenuの登録
+//        registerForContextMenu(v.findViewById(R.id.texture));
+
+        final GestureDetector gesture = new GestureDetector(getActivity(),
+                new GestureDetector.SimpleOnGestureListener() {
+
+                    @Override
+                    public boolean onDown(MotionEvent e) {
+                        Log.d(TAG, "GestureDetected: onDown()");
+//                return false;
+                        return true;
+                    }
+
+                    @Override
+                    public void onLongPress(MotionEvent e) {
+                        Log.d(TAG, "GestureDetected: onLongPress()");
+                        super.onLongPress(e);
+//                takePicture();
+                    }
+
+                    @Override
+                    public boolean onSingleTapUp(MotionEvent e) {
+                        Log.d(TAG, "GestureDetected: onSingleTapUp()");
+//                takePicture();
+                        return false;
+                    }
+
+                   @Override
+                    public boolean onDoubleTap(MotionEvent e) {
+                        Log.d(TAG, "GestureDetected: onDoubleTap()");
+                        takePicture();
+                        return super.onDoubleTap(e);
+                    }
+
+                    @Override
+                    public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+
+                        try {
+
+                            if (Math.abs(e1.getY() - e2.getY()) > SWIPE_MAX_OFF_PATH) {
+                                // 縦の移動距離が大きすぎる場合は無視
+                                return false;
+                            }
+
+                            if (e1.getX() - e2.getX() > SWIPE_MIN_DISTANCE
+                                    && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
+                                // 開始位置から終了位置の移動距離が指定値より大きい
+                                // X軸の移動速度が指定値より大きい
+                                Log.d(TAG, "GestureDetected: onFling() Swipe(Right to Left)");
+                                mCallback.imageClickEvent(true);
+                            } else if (e2.getX() - e1.getX() > SWIPE_MIN_DISTANCE
+                                    && Math.abs(velocityX) > SWIPE_THRESHOLD_VELOCITY) {
+                                // 終了位置から開始位置の移動距離が指定値より大きい
+                                // X軸の移動速度が指定値より大きい
+                                Log.d(TAG, "GestureDetected: onFling() Swipe(Left to Right)");
+                                mCallback.imageClickEvent(false);
+                            }
+
+                        } catch (Exception e) {
+                            // nothing
+                        }
+//                return false;
+                        return super.onFling(e1, e2, velocityX, velocityY);
+                    }
+                });
+
+        v.setOnTouchListener( new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event){
+//                Log.d(TAG, "onTouch(): fragment");
+                return gesture.onTouchEvent(event);
+            }
+        });
+
+//        mHandler = new Handler();
 
         return v;
     }
 
-    // Does setWidth(int pixels) use dip or px?
-    // https://stackoverflow.com/questions/2406449/does-setwidthint-pixels-use-dip-or-px
-    // value in DP
-    private static int getValueInDP(Context context, int value){
-        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, context.getResources().getDisplayMetrics());
+    @Override
+    public void onResume(){
+        super.onResume();
+        mHandler = new Handler();
     }
-
-    private static float getValueInDP(Context context, float value){
-        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, context.getResources().getDisplayMetrics());
-    }
-
-    // value in PX
-    private static int getValueInPixel(Context context, int value){
-        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, value, context.getResources().getDisplayMetrics());
-    }
-
-    private static float getValueInPixel(Context context, float value){
-        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, value, context.getResources().getDisplayMetrics());
+    @Override
+    public void onPause(){
+        super.onPause();
+        mHandler = null;
     }
 
     @Override
@@ -128,15 +219,44 @@ public class Camera2UIFragment extends Camera2BasicFragment
         super.onViewCreated(view,savedInstanceState);
 
         mButtonShoot = view.findViewById(R.id.picture);
-        mButtonShoot.setOnClickListener(this);
+        mButtonShoot.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                takePicture();
+            }
+        });
 
         mButtonLensFacing = view.findViewById(R.id.info);
-        mButtonLensFacing.setOnClickListener(this);
+        mButtonLensFacing.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mLensFacingFront){
+                    mLensFacingFront = false;
+                }else{
+                    mLensFacingFront = true;
+                }
+                onPause();
+                onResume();
+            }
+        });
 
         mButtonSave = view.findViewById(R.id.save);
         mButtonSave.setVisibility(View.INVISIBLE);
 
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
+        mTextureView.setOnLongClickListener(new View.OnLongClickListener() {
+            // Called when the user long-clicks on someView
+            public boolean onLongClick(View view) {
+                if (mActionMode != null) {
+                    return false;
+                }
+
+                // Start the CAB using the ActionMode.Callback defined above
+                mActionMode = getActivity().startActionMode(actionModeCallback);
+//                view.setSelected(true);
+                return true;
+            }
+        });
 
         if (mBleCommand != null) {
             Log.d(TAG, "takePicture() will be done by bleCommand");
@@ -144,6 +264,46 @@ public class Camera2UIFragment extends Camera2BasicFragment
 //            mState = STATE_WAITING_LOCK;
         }
     }
+
+    private ActionMode.Callback actionModeCallback = new ActionMode.Callback() {
+
+        // Called when the action mode is created; startActionMode() was called
+        @Override
+        public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+            // Inflate a menu resource providing context menu items
+            MenuInflater inflater = mode.getMenuInflater();
+            inflater.inflate(R.menu.option, menu);
+            return true;
+        }
+
+        // Called each time the action mode is shown. Always called after onCreateActionMode, but
+        // may be called multiple times if the mode is invalidated.
+        @Override
+        public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+            return false; // Return false if nothing is done
+        }
+
+        // Called when the user selects a contextual menu item
+        @Override
+        public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+            switch (item.getItemId()) {
+                case R.id.menuItem1:
+                    Log.i(TAG, "onActionItemClicked(): menuItem1 was chosen");
+                    startActivity(new Intent(getContext(), SettingsActivity.class));
+//                    shareCurrentItem();
+                    mode.finish(); // Action picked, so close the CAB
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        // Called when the user exits the action mode
+        @Override
+        public void onDestroyActionMode(ActionMode mode) {
+            mActionMode = null;
+        }
+    };
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
@@ -221,33 +381,29 @@ public class Camera2UIFragment extends Camera2BasicFragment
 
     }
 
-    @Override
-    public void onClick(View view) {
-        switch (view.getId()) {
-            case R.id.picture: {
-                takePicture();
-                break;
-            }
-            case R.id.info: {
-                if (mLensFacingFront){
-                    mLensFacingFront = false;
-                }else{
-                    mLensFacingFront = true;
-                }
-                onPause();
-                onResume();
-                break;
-            }
-        }
+    private static int getValueInDP(Context context, int value){
+    return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, context.getResources().getDisplayMetrics());
+    }
+    private static float getValueInDP(Context context, float value){
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, context.getResources().getDisplayMetrics());
+    }
+    // value in PX
+    private static int getValueInPixel(Context context, int value){
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, value, context.getResources().getDisplayMetrics());
+    }
+    private static float getValueInPixel(Context context, float value){
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, value, context.getResources().getDisplayMetrics());
     }
 
-//    /**
-//     * 現在日時をyyyyMMddTHHmmssSSS形式で取得する.<br>
-//     */
-//    public static String getNowTimestamp(){
-//        final DateFormat df = new SimpleDateFormat("yyyyMMdd'T'HHmmssSSS");
-//        final Date date = new Date(System.currentTimeMillis());
-//        return df.format(date);
-//    }
+    public interface Camera2UIFragmentCallback{
+        public void imageClickEvent(boolean increment);
+    }
 
+    private Camera2UIFragmentCallback mCallback;
+
+    // ガイドにはこうは書かれていないようだが、これで動作するので一旦よしとする
+    public void onAttach(Activity activity){
+        mCallback = (Camera2UIFragmentCallback) activity;
+        super.onAttach(activity);
+    }
 }
