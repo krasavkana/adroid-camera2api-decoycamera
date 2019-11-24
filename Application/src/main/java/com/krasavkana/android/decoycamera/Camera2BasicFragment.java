@@ -43,6 +43,7 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import androidx.annotation.NonNull;
@@ -74,6 +75,8 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import static android.os.Environment.getExternalStoragePublicDirectory;
+
 public abstract class Camera2BasicFragment extends Fragment {
 
     /**
@@ -82,6 +85,7 @@ public abstract class Camera2BasicFragment extends Fragment {
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
     private static final int REQUEST_CAMERA_PERMISSION = 1;
     private static final String FRAGMENT_DIALOG = "dialog";
+    private static final String DCIM_SUBDIRECTORY_FOR_SAVE = "decoy";
 
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 90);
@@ -258,7 +262,9 @@ public abstract class Camera2BasicFragment extends Fragment {
                }
             });
             //Backgroundスレッドのメッセージキューにメッセージを登録します。
-            mFile = new File(getActivity().getExternalFilesDir(null), mPrefix + getNowTimestamp() + ".jpg");
+            String saveDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/" + DCIM_SUBDIRECTORY_FOR_SAVE;
+            mFile = new File(saveDir, mPrefix + getNowTimestamp() + ".jpg");
+//            mFile = new File(getActivity().getExternalFilesDir(null), mPrefix + getNowTimestamp() + ".jpg");
             mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
             mHandler.post(new Runnable() {
                 //run()の中の処理はメインスレッドで動作する。

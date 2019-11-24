@@ -30,7 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class CameraActivity extends AppCompatActivity
-implements Camera2UIFragment.Camera2UIFragmentCallback {
+    implements Camera2UIFragment.Camera2UIFragmentCallback {
 
     private File[] mFiles;
     private int mFileNum = 0;
