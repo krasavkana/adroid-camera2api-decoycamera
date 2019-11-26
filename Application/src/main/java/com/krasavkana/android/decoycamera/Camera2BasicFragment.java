@@ -253,7 +253,7 @@ public abstract class Camera2BasicFragment extends Fragment {
 
         @Override
         public void onImageAvailable(ImageReader reader) {
-            //メインスレッドのメッセージキューにメッセージを登録します。
+            //UIにBackgroundスレッドの処理開始を伝えるため、メインスレッドのメッセージキューにメッセージを登録します。
             mHandler.post(new Runnable() {
                 //run()の中の処理はメインスレッドで動作する。
                 public void run() {
@@ -261,11 +261,12 @@ public abstract class Camera2BasicFragment extends Fragment {
                     mButtonSave.setVisibility(View.VISIBLE);
                }
             });
-            //Backgroundスレッドのメッセージキューにメッセージを登録します。
-            String saveDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/" + DCIM_SUBDIRECTORY_FOR_SAVE;
+            File saveDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), DCIM_SUBDIRECTORY_FOR_SAVE);
+            if(!saveDir.exists()){  saveDir.mkdir();  }
             mFile = new File(saveDir, mPrefix + getNowTimestamp() + ".jpg");
-//            mFile = new File(getActivity().getExternalFilesDir(null), mPrefix + getNowTimestamp() + ".jpg");
+            //Backgroundスレッドのメッセージキューにメッセージを登録します。
             mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
+            //UIにBackgroundスレッドの処理完了を伝えるため、メインスレッドのメッセージキューにメッセージを登録します。
             mHandler.post(new Runnable() {
                 //run()の中の処理はメインスレッドで動作する。
                 public void run() {
