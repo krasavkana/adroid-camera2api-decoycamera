@@ -57,10 +57,13 @@ public class CameraActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-        ActionBar ab = getSupportActionBar();
-        ab.setTitle(R.string.shortAppName);
+        //
+        //ActionModeを入れたのでActionBarの実装コードを削除する。
+        //menuの設定とLayout定義を変更（原則削除）した
+//        Toolbar toolbar = findViewById(R.id.toolbar);
+//        setSupportActionBar(toolbar);
+//        ActionBar ab = getSupportActionBar();
+//        ab.setTitle(R.string.shortAppName);
         if (null == savedInstanceState) {
             Intent intent = getIntent();
             String bleCommand;
@@ -144,29 +147,29 @@ public class CameraActivity extends AppCompatActivity
         super.onDestroy();
     }
 
-    // メニューをActivity上に設置する
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // 参照するリソースは上でリソースファイルに付けた名前と同じもの
-        getMenuInflater().inflate(R.menu.option, menu);
-        return super.onCreateOptionsMenu(menu);
-    }
-
-    // メニューが選択されたときの処理
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.menuItem1:
-                startActivity(new Intent(CameraActivity.this, SettingsActivity.class));
-                return true;
-
-            case R.id.menuItem2:
-                return true;
-
-            default:
-                return super.onOptionsItemSelected(item);
-        }
-    }
+//    // メニューをActivity上に設置する
+//    @Override
+//    public boolean onCreateOptionsMenu(Menu menu) {
+//        // 参照するリソースは上でリソースファイルに付けた名前と同じもの
+//        getMenuInflater().inflate(R.menu.option, menu);
+//        return super.onCreateOptionsMenu(menu);
+//    }
+//
+//    // メニューが選択されたときの処理
+//    @Override
+//    public boolean onOptionsItemSelected(MenuItem item) {
+//        switch (item.getItemId()) {
+//            case R.id.menuItem1:
+//                startActivity(new Intent(CameraActivity.this, SettingsActivity.class));
+//                return true;
+//
+//            case R.id.menuItem2:
+//                return true;
+//
+//            default:
+//                return super.onOptionsItemSelected(item);
+//        }
+//    }
 
     // startActivityForResult起動後に値が返されたときの処理
     @Override

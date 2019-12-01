@@ -68,7 +68,7 @@ public class Camera2UIFragment extends Camera2BasicFragment {
     /**
      * bleCommand from Intent
      */
-    private static String mBleCommand;
+//    private static String mBleCommand;
 
     public static Camera2UIFragment newInstance(String bleCommand) {
         mBleCommand = bleCommand;
