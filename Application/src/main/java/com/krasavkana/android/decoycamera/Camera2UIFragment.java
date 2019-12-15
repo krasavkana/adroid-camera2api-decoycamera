@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -235,6 +236,7 @@ public class Camera2UIFragment extends Camera2BasicFragment {
                 }else{
                     mLensFacingFront = true;
                 }
+                changeColorOfButtonLensFacing(mLensFacingFront);
                 onPause();
                 onResume();
             }
@@ -375,6 +377,7 @@ public class Camera2UIFragment extends Camera2BasicFragment {
         Log.d(TAG, "buttonLensFacingOn:" + buttonLensFacingOn);
         if(buttonLensFacingOn) {
             mButtonLensFacing.setVisibility(View.VISIBLE);
+            changeColorOfButtonLensFacing(mLensFacingFront);
         }else{
             mButtonLensFacing.setVisibility(View.INVISIBLE);
         }
@@ -406,4 +409,18 @@ public class Camera2UIFragment extends Camera2BasicFragment {
         mCallback = (Camera2UIFragmentCallback) activity;
         super.onAttach(activity);
     }
+
+    /**
+     * ImageButtonの色を変更する
+     * How do I change the tint of an ImageButton on focus/press
+     * https://stackoverflow.com/questions/3024983/how-do-i-change-the-tint-of-an-imagebutton-on-focus-press
+     */
+    private void changeColorOfButtonLensFacing(boolean isFront) {
+        if(isFront){
+            mButtonLensFacing.setColorFilter(Color.argb(255, 255, 255, 255));
+        }else{
+            mButtonLensFacing.setColorFilter(Color.argb(255, 0, 0, 0));
+        }
+    }
+
 }
